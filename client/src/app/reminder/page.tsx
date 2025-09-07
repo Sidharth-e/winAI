@@ -70,14 +70,6 @@ export default function Home() {
             <p className="mt-3 text-lg text-gray-500">
               Never forget an important task again.
             </p>
-            <div className="mt-6">
-              <a 
-                href="/dashboard" 
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                📊 View Dashboard
-              </a>
-            </div>
           </header>
 
           {/* Form Section to Add New Reminders */}

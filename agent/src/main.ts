@@ -21,6 +21,8 @@ app.on("ready", () => {
   fetchReminders();
 });
 
+let remindersProcessed = 0;
+
 async function fetchReminders() {
   try {
     const res = await axios.get("http://localhost:4000/api/reminders");
@@ -31,7 +33,13 @@ async function fetchReminders() {
       const reminderTime = new Date(r.time);
       if (reminderTime > now && reminderTime.getTime() - now.getTime() < 30000) {
         new Notification({ title: r.title, body: r.message }).show();
+        remindersProcessed++;
       }
+    });
+
+    // Send heartbeat to server
+    await axios.post("http://localhost:4000/api/agent/heartbeat", {
+      remindersProcessed: remindersProcessed
     });
   } catch (err) {
     console.error("Error fetching reminders:", err);
