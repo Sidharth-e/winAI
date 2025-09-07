@@ -8,7 +8,9 @@ let agentHeartbeat = {
   lastSeen: null as Date | null,
   startTime: new Date(),
   remindersProcessed: 0,
-  isActive: false
+  isActive: false,
+  systemData: null as any,
+  lastSystemUpdate: null as Date | null
 };
 
 // Endpoint for agent to send heartbeat
@@ -16,9 +18,15 @@ router.post("/heartbeat", (req: Request, res: Response) => {
   agentHeartbeat.lastSeen = new Date();
   agentHeartbeat.isActive = true;
   
-  // Increment reminders processed if provided
+  // Update reminders processed if provided
   if (req.body.remindersProcessed !== undefined) {
     agentHeartbeat.remindersProcessed = req.body.remindersProcessed;
+  }
+  
+  // Update system data if provided
+  if (req.body.systemData !== undefined) {
+    agentHeartbeat.systemData = req.body.systemData;
+    agentHeartbeat.lastSystemUpdate = new Date();
   }
   
   res.json({ success: true, timestamp: agentHeartbeat.lastSeen });
@@ -59,7 +67,9 @@ router.get("/status", (req: Request, res: Response) => {
     lastSeen,
     uptime,
     remindersProcessed: agentHeartbeat.remindersProcessed,
-    lastPollTime
+    lastPollTime,
+    systemData: agentHeartbeat.systemData,
+    lastSystemUpdate: agentHeartbeat.lastSystemUpdate?.toLocaleString() || "Never"
   });
 });
 
@@ -69,7 +79,9 @@ router.post("/reset", (req: Request, res: Response) => {
     lastSeen: null,
     startTime: new Date(),
     remindersProcessed: 0,
-    isActive: false
+    isActive: false,
+    systemData: null,
+    lastSystemUpdate: null
   };
   res.json({ success: true, message: "Agent status reset" });
 });

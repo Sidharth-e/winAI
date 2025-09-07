@@ -1,12 +1,54 @@
 "use client";
 import { useState, useEffect } from "react";
 
+interface SystemData {
+  cpu: {
+    usage: number;
+    cores: number;
+    model: string;
+    speed: number;
+  };
+  memory: {
+    total: number;
+    used: number;
+    free: number;
+    usage: number;
+  };
+  storage: Array<{
+    device: string;
+    type: string;
+    total: number;
+    used: number;
+    free: number;
+    usage: number;
+  }>;
+  system: {
+    platform: string;
+    arch: string;
+    hostname: string;
+    uptime: number;
+  };
+  network: Array<{
+    interface: string;
+    speed: number;
+    bytesReceived: number;
+    bytesSent: number;
+  }>;
+  processes: {
+    total: number;
+    running: number;
+    sleeping: number;
+  };
+}
+
 interface AgentStatus {
   isActive: boolean;
   lastSeen: string;
   uptime: string;
   remindersProcessed: number;
   lastPollTime: string;
+  systemData: SystemData | null;
+  lastSystemUpdate: string;
 }
 
 export default function Dashboard() {
@@ -15,7 +57,9 @@ export default function Dashboard() {
     lastSeen: "Never",
     uptime: "0s",
     remindersProcessed: 0,
-    lastPollTime: "Never"
+    lastPollTime: "Never",
+    systemData: null,
+    lastSystemUpdate: "Never"
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -169,6 +213,180 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* System Monitoring Section */}
+          {agentStatus.systemData && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">🖥️ System Monitoring</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                
+                {/* CPU Usage Card */}
+                <div className="bg-white p-6 rounded-2xl shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">CPU Usage</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Usage</span>
+                      <span className={`text-lg font-bold ${agentStatus.systemData.cpu.usage > 80 ? 'text-red-600' : agentStatus.systemData.cpu.usage > 60 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {agentStatus.systemData.cpu.usage}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Model</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.cpu.model}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Cores</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.cpu.cores}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Speed</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.cpu.speed} MHz</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Memory Usage Card */}
+                <div className="bg-white p-6 rounded-2xl shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Memory Usage</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Usage</span>
+                      <span className={`text-lg font-bold ${agentStatus.systemData.memory.usage > 80 ? 'text-red-600' : agentStatus.systemData.memory.usage > 60 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {agentStatus.systemData.memory.usage}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Used</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.memory.used} GB</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Free</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.memory.free} GB</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.memory.total} GB</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System Info Card */}
+                <div className="bg-white p-6 rounded-2xl shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">System Info</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Platform</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.system.platform}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Architecture</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.system.arch}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Hostname</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.system.hostname}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">System Uptime</span>
+                      <span className="text-sm font-medium text-gray-800">{agentStatus.systemData.system.uptime}h</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Process Info Card */}
+                <div className="bg-white p-6 rounded-2xl shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Processes</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total</span>
+                      <span className="text-lg font-bold text-blue-600">{agentStatus.systemData.processes.total}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Running</span>
+                      <span className="text-sm font-medium text-green-600">{agentStatus.systemData.processes.running}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Sleeping</span>
+                      <span className="text-sm font-medium text-gray-600">{agentStatus.systemData.processes.sleeping}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Last System Update Card */}
+                <div className="bg-white p-6 rounded-2xl shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Last System Update</h3>
+                  <p className="text-lg font-bold text-purple-600">{agentStatus.lastSystemUpdate}</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Last time system data was collected
+                  </p>
+                </div>
+              </div>
+
+              {/* Storage Information */}
+              {agentStatus.systemData.storage.length > 0 && (
+                <div className="bg-white p-6 rounded-2xl shadow-lg">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">💾 Storage Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {agentStatus.systemData.storage.map((disk, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-gray-800">{disk.device}</span>
+                          <span className="text-sm text-gray-500">{disk.type}</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Usage</span>
+                            <span className={`text-sm font-bold ${disk.usage > 80 ? 'text-red-600' : disk.usage > 60 ? 'text-yellow-600' : 'text-green-600'}`}>
+                              {disk.usage}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Used</span>
+                            <span className="text-sm font-medium text-gray-800">{disk.used} GB</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Free</span>
+                            <span className="text-sm font-medium text-gray-800">{disk.free} GB</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Total</span>
+                            <span className="text-sm font-medium text-gray-800">{disk.total} GB</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Network Information */}
+              {agentStatus.systemData.network.length > 0 && (
+                <div className="bg-white p-6 rounded-2xl shadow-lg mt-6">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">🌐 Network Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {agentStatus.systemData.network.map((net, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-gray-800">{net.interface}</span>
+                          <span className="text-sm text-gray-500">{net.speed > 0 ? `${net.speed} Mbps` : 'Unknown Speed'}</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Bytes Received</span>
+                            <span className="text-sm font-medium text-gray-800">{(net.bytesReceived / 1024 / 1024).toFixed(2)} MB</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Bytes Sent</span>
+                            <span className="text-sm font-medium text-gray-800">{(net.bytesSent / 1024 / 1024).toFixed(2)} MB</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Activity Log */}
           <div className="bg-white p-6 rounded-2xl shadow-lg">
