@@ -1,103 +1,145 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+
+// Defines the structure for a single reminder object
+interface Reminder {
+  _id: string;
+  title: string;
+  message: string;
+  time: string;
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // State management for the list of reminders and form inputs
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [time, setTime] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Fetch existing reminders from the API when the component mounts
+  useEffect(() => {
+    fetch("http://localhost:4000/api/reminders")
+      .then((res) => res.json())
+      .then((data) => setReminders(data))
+      .catch(err => console.error("Failed to fetch reminders:", err)); // Basic error handling
+  }, []);
+
+  // Handles adding a new reminder
+  const addReminder = async () => {
+    // Prevents adding empty reminders
+    if (!title || !message || !time) {
+        alert("Please fill out all fields.");
+        return;
+    }
+    
+    try {
+        const res = await fetch("http://localhost:4000/api/reminders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, message, time }),
+        });
+
+        if (!res.ok) throw new Error("API call failed");
+
+        const newReminder = await res.json();
+        // Add the new reminder to the list and sort by time
+        setReminders(prevReminders => 
+            [...prevReminders, newReminder].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+        );
+
+        // Clear input fields after successful submission
+        setTitle("");
+        setMessage("");
+        setTime("");
+    } catch (error) {
+        console.error("Failed to add reminder:", error);
+        alert("Could not add the reminder. Please try again.");
+    }
+  };
+
+  return (
+    <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
+      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="max-w-3xl mx-auto">
+          
+          {/* Page Header */}
+          <header className="text-center mb-10">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
+              AI Agent Reminders 🤖
+            </h1>
+            <p className="mt-3 text-lg text-gray-500">
+              Never forget an important task again.
+            </p>
+          </header>
+
+          {/* Form Section to Add New Reminders */}
+          <section className="bg-white p-6 rounded-2xl shadow-lg mb-12">
+            <h2 className="text-xl font-bold mb-5 text-gray-800">Add a New Reminder</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-100 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                />
+                <input
+                  type="text"
+                  placeholder="Message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-100 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <input
+                  type="datetime-local"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="md:col-span-2 w-full px-4 py-3 bg-gray-100 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 transition"
+                />
+                <button
+                  onClick={addReminder}
+                  className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105"
+                >
+                  Add Reminder
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Section to Display Upcoming Reminders */}
+          <section>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              Upcoming Reminders
+            </h2>
+            {reminders.length > 0 ? (
+              <ul className="space-y-4">
+                {reminders.map((r) => (
+                  <li
+                    key={r._id}
+                    className="bg-white p-5 rounded-xl shadow flex flex-col sm:flex-row justify-between sm:items-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className="mb-3 sm:mb-0">
+                      <p className="font-bold text-lg text-blue-700">{r.title}</p>
+                      <p className="text-gray-600">{r.message}</p>
+                    </div>
+                    <p className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full self-start sm:self-center">
+                      {new Date(r.time).toLocaleString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-10 px-6 bg-white rounded-2xl shadow-lg">
+                <p className="text-gray-500">You have no upcoming reminders. ✨</p>
+              </div>
+            )}
+          </section>
+
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
