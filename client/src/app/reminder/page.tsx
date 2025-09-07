@@ -59,6 +59,31 @@ export default function Home() {
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
+      {/* Navigation Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">📅 Reminders</h1>
+            </div>
+            <nav className="flex items-center space-x-4">
+              <a 
+                href="/" 
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                💬 Chat
+              </a>
+              <a 
+                href="/dashboard" 
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                📊 Dashboard
+              </a>
+            </nav>
+          </div>
+        </div>
+      </header>
+
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="max-w-3xl mx-auto">
           
