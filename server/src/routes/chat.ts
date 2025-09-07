@@ -26,9 +26,12 @@ const createReminderDeclaration: FunctionDeclaration = {
   parametersJsonSchema: {
     type: "object",
     properties: {
-      title: { type: "string" },
-      message: { type: "string" },
-      time: { type: "string", description: "ISO date string for when the reminder should trigger" }
+      title: { type: "string", description: "The title of the reminder" },
+      message: { type: "string", description: "The message content of the reminder" },
+      time: { 
+        type: "string", 
+        description: "Date and time for the reminder. Examples: 1) '7:36 PM today' (for today), 2) '2025-07-09T19:36:00' (ISO format), 3) '07/09/2025 7:36 PM' (date + time). For dates, use MM/DD/YYYY format (e.g., 07/09/2025 for July 9th, 2025). Must be at least 30 seconds in the future." 
+      }
     },
     required: ["title", "message", "time"]
   }
@@ -82,14 +85,88 @@ const generateAIResponse = async (
               return `❌ Invalid reminder parameters. Please provide title, message, and time.`;
             }
             
+            // Parse and validate the time string
+            let parsedTime: Date;
+            try {
+              // Debug logging
+              console.log("AI provided time string:", args.time);
+              
+              // Try to parse the time string - handle various formats
+              parsedTime = new Date(args.time);
+              
+              // If parsing failed or resulted in invalid date, try alternative parsing
+              if (isNaN(parsedTime.getTime())) {
+                // Try to parse common date formats manually
+                const timeStr = args.time.toLowerCase().trim();
+                
+                // Handle "today" with time
+                if (timeStr.includes('today')) {
+                  const today = new Date();
+                  const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
+                  if (timeMatch) {
+                    let hours = parseInt(timeMatch[1]);
+                    const minutes = parseInt(timeMatch[2]);
+                    const ampm = timeMatch[3];
+                    
+                    if (ampm === 'pm' && hours !== 12) hours += 12;
+                    if (ampm === 'am' && hours === 12) hours = 0;
+                    
+                    parsedTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
+                  }
+                }
+                
+                // Handle MM/DD/YYYY or DD/MM/YYYY formats
+                const dateMatch = timeStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                if (dateMatch && isNaN(parsedTime.getTime())) {
+                  const [, part1, part2, year] = dateMatch;
+                  const num1 = parseInt(part1);
+                  const num2 = parseInt(part2);
+                  
+                  // Try both interpretations and pick the one that makes more sense
+                  const option1 = new Date(parseInt(year), num1 - 1, num2); // MM/DD/YYYY
+                  const option2 = new Date(parseInt(year), num2 - 1, num1); // DD/MM/YYYY
+                  
+                  // If one is clearly invalid (like month > 12), use the other
+                  if (num1 > 12) {
+                    parsedTime = option2;
+                  } else if (num2 > 12) {
+                    parsedTime = option1;
+                  } else {
+                    // Both could be valid, prefer the one closer to today
+                    const today = new Date();
+                    const diff1 = Math.abs(option1.getTime() - today.getTime());
+                    const diff2 = Math.abs(option2.getTime() - today.getTime());
+                    parsedTime = diff1 < diff2 ? option1 : option2;
+                  }
+                }
+              }
+              
+              console.log("Parsed time:", parsedTime);
+              console.log("Current time:", new Date());
+              
+              // Check if the date is valid
+              if (isNaN(parsedTime.getTime())) {
+                return `❌ Invalid time format. Please provide a valid date and time.`;
+              }
+              
+              // Check if the time is in the future (with 30 second buffer for processing time)
+              const now = new Date();
+              const bufferTime = new Date(now.getTime() + 30 * 1000); // 30 seconds buffer
+              if (parsedTime <= bufferTime) {
+                return `❌ Reminder time must be at least 30 seconds in the future. Current time: ${now.toLocaleString()}, Requested time: ${parsedTime.toLocaleString()}`;
+              }
+            } catch (parseError) {
+              return `❌ Invalid time format. Please provide a valid date and time.`;
+            }
+            
             const reminder = new Reminder({
               title: args.title,
               message: args.message,
-              time: new Date(args.time)
+              time: parsedTime
             });
             await reminder.save();
             console.log("Reminder created:", reminder);
-            return `✅ Reminder created successfully! Title: "${args.title}", Message: "${args.message}", Time: ${new Date(args.time).toLocaleString()}`;
+            return `✅ Reminder created successfully! Title: "${args.title}", Message: "${args.message}", Time: ${parsedTime.toLocaleString()}`;
           } catch (error) {
             console.error("Error creating reminder:", error);
             return `❌ Failed to create reminder: ${error}`;
